@@ -14,7 +14,7 @@
     <canvas id="imagenBn"></canvas>
     <canvas id="imagenDithering"></canvas>
     <style>
-        canvas{
+        canvas {
             max-width: 400px;
             height: auto;
             width: 100%;
@@ -22,6 +22,7 @@
         }
     </style>
     <script>
+
 
         const convertirIndiceDePixelACoordenadas = (indice, ancho) => {
             const pixel = indice / 4;
@@ -148,8 +149,9 @@
                 }
                 $imagenGrises.getContext("2d").putImageData(imageDataOriginal, 0, 0);
 
+                const pixelesModificados = modificarParaDithering(new Uint8ClampedArray(pixeles), imagenComoBitmap.width, imagenComoBitmap.height);
                 // Solo b y n
-                /*
+
                 for (let indice = 0; indice < pixeles.length; indice += posicionesPorPixel) {
                     // Hasta este punto los niveles RGB ya están igualados y da igual a cuál de ellos accedamos, todos tienen el mismo nivel de gris
                     const gris = pixeles[indice];
@@ -176,10 +178,8 @@
                 }
 
                 $imagenBn.getContext("2d").putImageData(imageDataOriginal, 0, 0);
-*/
                 //
-                modificarParaDithering(pixeles, imagenComoBitmap.width, imagenComoBitmap.height);
-                $imagenDithering.getContext("2d").putImageData(imageDataOriginal, 0, 0);
+                $imagenDithering.getContext("2d").putImageData(new ImageData(pixelesModificados, imagenComoBitmap.width, imagenComoBitmap.height), 0, 0);
 
                 console.log({ pixeles })
 
