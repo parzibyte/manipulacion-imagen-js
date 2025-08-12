@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <input type="file" id="imagen">
+    <canvas id="imagenOriginal"></canvas>
+    <canvas id="imagenGrises"></canvas>
+    <canvas id="imagenBn"></canvas>
+    <canvas id="imagenDithering"></canvas>
+    <style>
+        canvas{
+            max-width: 400px;
+            height: auto;
+            width: 100%;
+            image-rendering: pixelated;
+        }
+    </style>
+    <script>
+
+        const convertirIndiceDePixelACoordenadas = (indice, ancho) => {
+            const pixel = indice / 4;
+            const x = pixel % ancho;
+            const y = Math.floor(pixel / ancho);
+            return [x, y];
+        }
+
+        const convertirCoordenadasAIndice = (x, y, ancho) => {
+            return (y * ancho + x) * 4; // 4 es la cantidad de niveles por pixel
+        }
+
+        const calcular716 = (pixelesEscalaGrises, indice, errorDeCuantificacion) => {
+            return pixelesEscalaGrises[indice] + errorDeCuantificacion * 7 / 16;
+        }
+
+        const establecerNivelDeColorEnImagen = (pixelesEscalaGrises, x, y, nuevoValor) => {
+            const indice = convertirCoordenadasAIndice(x, y);
+            if (indice > pixelesEscalaGrises.length) {
+                return pixelesEscalaGrises;
+            }
+            pixelesEscalaGrises[indice] = nuevoValor;
+            pixelesEscalaGrises[indice + 1] = nuevoValor;
+            pixelesEscalaGrises[indice + 2] = nuevoValor;
+            return pixelesEscalaGrises;
+        }
+        const propagarError = (pixelesEscalaGrises, indice, errorDeCuantificacion, ancho, alto) => {
+            /*
+                    pixels[x + 1][y    ] := pixels[x + 1][y    ] + quant_error × 7 / 16
+                    pixels[x - 1][y + 1] := pixels[x - 1][y + 1] + quant_error × 3 / 16
+                    pixels[x    ][y + 1] := pixels[x    ][y + 1] + quant_error × 5 / 16
+                    pixels[x + 1][y + 1] := pixels[x + 1][y + 1] + quant_error × 1 / 16
+                */
+            const nivelesPorPixel = 4;
+
+            //pixels[x + 1][y    ] := pixels[x + 1][y    ] + quant_error × 7 / 16
+            const [x, y] = convertirIndiceDePixelACoordenadas(indice, ancho);
+            if (x < ancho - 1) {
+                for (let i = 0; i < 3; i++) {
+                    pixelesEscalaGrises[indice + nivelesPorPixel + i] += errorDeCuantificacion * 7 / 16
+                }
+            }
+
+            //pixels[x - 1][y + 1] := pixels[x - 1][y + 1] + quant_error × 3 / 16
+            if (x > 0) {
+                for (let i = 0; i < 3; i++) {
+                    pixelesEscalaGrises[indice - nivelesPorPixel + (ancho * nivelesPorPixel) + i] += errorDeCuantificacion * 3 / 16
+                }
+            }
+            //pixels[x    ][y + 1] := pixels[x    ][y + 1] + quant_error × 5 / 16
+            if (y < alto - 1) {
+                for (let i = 0; i < 3; i++) {
+                    pixelesEscalaGrises[indice + (ancho * nivelesPorPixel) + i] += errorDeCuantificacion * 5 / 16
+                }
+            }
+
+            //pixels[x + 1][y + 1] := pixels[x + 1][y + 1] + quant_error × 1 / 16
+            if (y < alto - 1 && x < ancho - 1) {
+                for (let i = 0; i < 3; i++) {
+                    pixelesEscalaGrises[indice + (ancho * nivelesPorPixel) + nivelesPorPixel + i] += errorDeCuantificacion * 1 / 16
+                }
+            }
+
+        }
+        const modificarParaDithering = (pixelesEscalaGrises, ancho, alto) => {
+
+            for (let indice = 0; indice < pixelesEscalaGrises.length; indice += 4) {
+                // Hasta este punto los niveles RGB ya están igualados y da igual a cuál de ellos accedamos, todos tienen el mismo nivel de gris
+                const gris = pixelesEscalaGrises[indice];
+                const alfa = pixelesEscalaGrises[indice + 3];
+                let nivel = 255;
+                if (gris < 128 && alfa > 128) {
+                    nivel = 0;
+                }
+                pixelesEscalaGrises[indice] = nivel;
+                pixelesEscalaGrises[indice + 1] = nivel;
+                pixelesEscalaGrises[indice + 2] = nivel;
+                const errorDeCuantificacion = gris - nivel;
+                //console.log("nivel de gris %o error cuantificación %o", gris, errorDeCuantificacion);
+                propagarError(pixelesEscalaGrises, indice, errorDeCuantificacion, ancho, alto)
+                //console.log(`rgba(${rojo}, ${verde}, ${azul}, ${alpha})`);
+            }
+            return pixelesEscalaGrises;
+        }
+        document.addEventListener("DOMContentLoaded", async () => {
+            const $imagen = document.querySelector("#imagen");
+            const $imagenOriginal = document.querySelector("#imagenOriginal");
+            const $imagenGrises = document.querySelector("#imagenGrises");
+            const $imagenBn = document.querySelector("#imagenBn");
+            const $imagenDithering = document.querySelector("#imagenDithering");
+            $imagen.onchange = async (e) => {
+                const archivos = e.target.files;
+                if (archivos.length <= 0) {
+                    return;
+                }
+                const imagen = archivos[0];
+                const imagenComoBitmap = await createImageBitmap(imagen);
+                canvasFueraDePantalla = new OffscreenCanvas(imagenComoBitmap.width, imagenComoBitmap.height);
+                contextoCanvas = canvasFueraDePantalla.getContext("2d");
+                contextoCanvas.drawImage(imagenComoBitmap, 0, 0, imagenComoBitmap.width, imagenComoBitmap.height);
+                $imagenOriginal.height = imagenComoBitmap.height;
+                $imagenOriginal.width = imagenComoBitmap.width;
+                $imagenGrises.width = imagenComoBitmap.width;
+                $imagenGrises.height = imagenComoBitmap.height;
+                $imagenBn.width = imagenComoBitmap.width;
+                $imagenBn.height = imagenComoBitmap.height;
+                $imagenDithering.width = imagenComoBitmap.width;
+                $imagenDithering.height = imagenComoBitmap.height;
+                $imagenOriginal.getContext("2d").drawImage(imagenComoBitmap, 0, 0, imagenComoBitmap.width, imagenComoBitmap.height);
+                const imageDataOriginal = $imagenOriginal.getContext("2d").getImageData(0, 0, $imagenOriginal.width, $imagenOriginal.height);
+                const pixeles = imageDataOriginal.data;
+                const posicionesPorPixel = 4;
+                // Solo grises
+                for (let indice = 0; indice < pixeles.length; indice += posicionesPorPixel) {
+                    const rojo = pixeles[indice];
+                    const verde = pixeles[indice + 1];
+                    const azul = pixeles[indice + 2];
+                    //const alpha = pixeles[indice + 3];
+                    const gris = 0.3 * rojo + 0.59 * verde + 0.11 * azul;
+                    pixeles[indice] = gris;
+                    pixeles[indice + 1] = gris;
+                    pixeles[indice + 2] = gris;
+                    //console.log(`rgba(${rojo}, ${verde}, ${azul}, ${alpha})`);
+                }
+                $imagenGrises.getContext("2d").putImageData(imageDataOriginal, 0, 0);
+
+                // Solo b y n
+                /*
+                for (let indice = 0; indice < pixeles.length; indice += posicionesPorPixel) {
+                    // Hasta este punto los niveles RGB ya están igualados y da igual a cuál de ellos accedamos, todos tienen el mismo nivel de gris
+                    const gris = pixeles[indice];
+                    const alfa = pixeles[indice + 3];
+                    if (gris > 128) {
+                        // Todo es blanco
+                        pixeles[indice] = 255;
+                        pixeles[indice + 1] = 255;
+                        pixeles[indice + 2] = 255;
+                    } else {
+                        if (alfa < 128) {
+                            // Todo es blanco
+                            pixeles[indice] = 255;
+                            pixeles[indice + 1] = 255;
+                            pixeles[indice + 2] = 255;
+                        } else {
+                            // Todo es negro
+                            pixeles[indice] = 0;
+                            pixeles[indice + 1] = 0;
+                            pixeles[indice + 2] = 0;
+                        }
+                    }
+                    //console.log(`rgba(${rojo}, ${verde}, ${azul}, ${alpha})`);
+                }
+
+                $imagenBn.getContext("2d").putImageData(imageDataOriginal, 0, 0);
+*/
+                //
+                modificarParaDithering(pixeles, imagenComoBitmap.width, imagenComoBitmap.height);
+                $imagenDithering.getContext("2d").putImageData(imageDataOriginal, 0, 0);
+
+                console.log({ pixeles })
+
+            }
+        })
+    </script>
+</body>
+
+</html>
