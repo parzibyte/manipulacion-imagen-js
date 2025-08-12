@@ -183,17 +183,8 @@
   .flex {
     display: flex;
   }
-  .table {
-    display: table;
-  }
   .max-w-min {
     max-width: min-content;
-  }
-  .border-collapse {
-    border-collapse: collapse;
-  }
-  .resize {
-    resize: both;
   }
   .flex-col {
     flex-direction: column;
@@ -212,9 +203,6 @@
   .border-green-200 {
     border-color: var(--color-green-200);
   }
-  .bg-red-500 {
-    background-color: var(--color-red-500);
-  }
   .p-1 {
     padding: calc(var(--spacing) * 1);
   }
@@ -226,22 +214,6 @@
   }
   .text-green-500 {
     color: var(--color-green-500);
-  }
-  .text-green-600 {
-    color: var(--color-green-600);
-  }
-  .text-green-700 {
-    color: var(--color-green-700);
-  }
-  .text-red-500 {
-    color: var(--color-red-500);
-  }
-  .underline {
-    text-decoration-line: underline;
-  }
-  .outline {
-    outline-style: var(--tw-outline-style);
-    outline-width: 1px;
   }
   .file\:rounded-md {
     &::file-selector-button {
@@ -259,19 +231,9 @@
       border-color: var(--color-green-200);
     }
   }
-  .file\:bg-green-200 {
-    &::file-selector-button {
-      background-color: var(--color-green-200);
-    }
-  }
   .file\:p-2 {
     &::file-selector-button {
       padding: calc(var(--spacing) * 2);
-    }
-  }
-  .file\:text-green-200 {
-    &::file-selector-button {
-      color: var(--color-green-200);
     }
   }
   .file\:text-green-500 {
@@ -285,16 +247,10 @@
   inherits: false;
   initial-value: solid;
 }
-@property --tw-outline-style {
-  syntax: "*";
-  inherits: false;
-  initial-value: solid;
-}
 @layer properties {
   @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color:rgb(from red r g b)))) {
     *, ::before, ::after, ::backdrop {
       --tw-border-style: solid;
-      --tw-outline-style: solid;
     }
   }
 }
