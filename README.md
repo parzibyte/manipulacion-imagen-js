@@ -8,6 +8,7 @@ Convertir imagen a escala de grises, b/n y b/n con Floyd-Steinberg Dithering
 
 ## Compilando para producción
 1. `npm run build`
+2. Distribuye el contenido de `dist`
 
 ## Versión de Node
 Node: v24.5.0
