@@ -26,7 +26,8 @@
             <option value="bndithering">Blanco y negro con dithering</option>
         </select>
         <canvas class="ocultable rounded-md max-w-64 w-full" id="resultado"></canvas>
-        <div class="ocultable bg-green-500 text-white p-2 rounded-md text-xs mt-2">La imagen no se muestra en tamaño completo para
+        <div class="ocultable bg-green-500 text-white p-2 rounded-md text-xs mt-2">La imagen no se muestra en tamaño
+            completo para
             no
             romper el diseño. <br> Para ver la imagen en su calidad original debes descargarla</div>
         <select
@@ -193,7 +194,7 @@
                 if ($color.value === "grises") {
                     pixeles = modificarParaEscalaDeGrises(imageData.data);
                 } else if ($color.value === "bn") {
-                    pixeles = modificarBN(imageData.data);
+                    pixeles = modificarBN(modificarParaEscalaDeGrises(imageData.data), imagenComoBitmap.width, imagenComoBitmap.height);
                 } else if ($color.value === "bndithering") {
                     // Dithering necesita que ya esté en escala de grises
                     pixeles = modificarParaDithering(modificarParaEscalaDeGrises(imageData.data), imagenComoBitmap.width, imagenComoBitmap.height);
